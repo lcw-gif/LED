@@ -416,9 +416,9 @@ function drawPreviewECG(ctx, w, h) {
   ctx.stroke();
   // Leading dot
   const lt = ((w-1)/w + previewTick * 0.04) % 1.0;
-  let lv = 0.15*Math.exp(-(lt-0.2)**2/0.003) - 0.25*Math.exp(-(lt-0.38)**2/0.0008)
-         + Math.exp(-(lt-0.45)**2/0.0003) - 0.2*Math.exp(-(lt-0.52)**2/0.0008)
-         + 0.28*Math.exp(-(lt-0.72)**2/0.004);
+  let lv = 0.15*Math.exp(-Math.pow(lt-0.2,2)/0.003) - 0.25*Math.exp(-Math.pow(lt-0.38,2)/0.0008)
+         + Math.exp(-Math.pow(lt-0.45,2)/0.0003) - 0.2*Math.exp(-Math.pow(lt-0.52,2)/0.0008)
+         + 0.28*Math.exp(-Math.pow(lt-0.72,2)/0.004);
   ctx.fillStyle = '#5fef70';
   ctx.beginPath();
   ctx.arc(w-1, base - lv*14, 2, 0, Math.PI*2);
