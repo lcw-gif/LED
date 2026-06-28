@@ -109,6 +109,7 @@
   <div class="card">
     <button class="btn btn-green" id="btnConn" onclick="toggleBLE()">⚡ 連接 LED Mask</button>
     <div class="status" id="status">未連接</div>
+    <div id="debugInfo" style="display:none;font-size:10px;color:var(--red);margin-top:6px;word-break:break-all;"></div>
     <div style="font-size:11px;color:var(--dim);margin-top:8px;text-align:center;">
       ⚠️ 需要 Chrome/Edge + HTTPS 或 localhost<br>
       本地測試：終端機執行 <code style="background:#21262d;padding:2px 6px;border-radius:4px;">python -m http.server 8000</code> 然後開 <code style="background:#21262d;padding:2px 6px;border-radius:4px;">localhost:8000</code>
@@ -502,10 +503,19 @@ async function toggleBLE() {
 
   try {
     st.textContent = '正在連接...';
-    // Show all BLE devices so user can pick
-    bleDevice = await navigator.bluetooth.requestDevice({
-      acceptAllDevices: true,
-      optionalServices: [SVC]
+    // 方法 1: 用 filter 搜尋 "LED Mask"
+    try {
+      bleDevice = await navigator.bluetooth.requestDevice({
+        filters: [{ name: 'LED Mask' }],
+        optionalServices: [SVC]
+      });
+    } catch (e1) {
+      // 方法 2: 如果搵唔到，顯示所有 BLE 設備
+      console.log('Filter failed, trying acceptAllDevices:', e1.message);
+      bleDevice = await navigator.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: [SVC]
+      });
     });
     const server = await bleDevice.gatt.connect();
     const svc = await server.getPrimaryService(SVC);
@@ -531,8 +541,17 @@ async function toggleBLE() {
       st.className = 'status';
     });
   } catch (err) {
-    st.textContent = '❌ ' + err.message;
+    console.error('BLE Error:', err);
+    st.textContent = '❌ ' + err.message + ' (See console for details)';
     st.className = 'status';
+    // Debug info
+    const debug = document.getElementById('debugInfo');
+    if (debug) {
+      debug.style.display = 'block';
+      debug.textContent = 'Browser: ' + navigator.userAgent.substring(0, 80) +
+        ' | Bluetooth: ' + (navigator.bluetooth ? 'supported' : 'NOT supported') +
+        ' | Secure: ' + (location.isSecureContext ? 'yes' : 'NO - need HTTPS!');
+    }
   }
 }
 
