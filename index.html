@@ -516,7 +516,7 @@ async function toggleBLE() {
         acceptAllDevices: true,
         optionalServices: [SVC]
       });
-    });
+    }
     const server = await bleDevice.gatt.connect();
     const svc = await server.getPrimaryService(SVC);
     bleChar = await svc.getCharacteristic(RX_C);
