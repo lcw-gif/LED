@@ -130,7 +130,8 @@
       <button class="btn btn-mode" onclick="quickMode(6)">🔮 Plasma</button>
       <button class="btn btn-mode" onclick="quickMode(7)">📝 Text Scroll</button>
       <button class="btn btn-mode" onclick="quickMode(8)">💚 ECG Monitor</button>
-      <button class="btn btn-mode" onclick="quickMode(9)">🔇 Off</button>
+      <button class="btn btn-mode" onclick="quickMode(9)">🎭 Show Mode</button>
+      <button class="btn btn-mode" onclick="quickMode(10)">🔇 Off</button>
     </div>
   </div>
 
@@ -190,7 +191,8 @@ const PATTERNS = [
   { id:6, name:'Plasma',        color:'#d29922' },
   { id:7, name:'Text Scroll',   color:'#e6edf3' },
   { id:8, name:'ECG Monitor',   color:'#3fb950' },
-  { id:9, name:'Off',           color:'#333' },
+  { id:9, name:'Show Mode',     color:'#f778ba' },
+  { id:10, name:'Off',           color:'#333' },
 ];
 const COLORS = [
   { name:'Red',     r:255,g:0,  b:0   },
@@ -307,7 +309,8 @@ function drawPreviews() {
       case 6: drawPreviewPlasma(ctx, w, h); break;
       case 7: drawPreviewText(ctx, w, h); break;
       case 8: drawPreviewECG(ctx, w, h); break;
-      case 9: break; // off = black
+      case 9: drawPreviewShow(ctx, w, h); break;
+      case 10: break; // off = black
     }
   });
 }
@@ -424,6 +427,64 @@ function drawPreviewECG(ctx, w, h) {
   ctx.beginPath();
   ctx.arc(w-1, base - lv*14, 2, 0, Math.PI*2);
   ctx.fill();
+}
+
+function drawPreviewShow(ctx, w, h) {
+  // Rotating show effects preview
+  const t = previewTick % 60;
+  const hue = (previewTick * 3) % 360;
+  if (t < 10) {
+    // Expanding ring
+    const r = (t / 10) * 25;
+    ctx.strokeStyle = `hsl(${hue},90%,60%)`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(w/2, h/2, r, 0, Math.PI*2);
+    ctx.stroke();
+  } else if (t < 20) {
+    // Starburst
+    ctx.strokeStyle = `hsl(${hue},90%,60%)`;
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 8; i++) {
+      const a = i * Math.PI / 4 + previewTick * 0.05;
+      ctx.beginPath();
+      ctx.moveTo(w/2, h/2);
+      ctx.lineTo(w/2 + Math.cos(a)*20, h/2 + Math.sin(a)*20);
+      ctx.stroke();
+    }
+  } else if (t < 30) {
+    // Matrix rain
+    ctx.fillStyle = `hsl(${hue},90%,60%)`;
+    for (let i = 0; i < 8; i++) {
+      const y = ((previewTick * 2 + i * 7) % h);
+      ctx.fillRect(i * 6, y, 3, 4);
+    }
+  } else if (t < 40) {
+    // Diamond
+    const d = ((t - 30) / 10) * w;
+    ctx.fillStyle = `hsl(${hue},90%,60%)`;
+    ctx.beginPath();
+    ctx.moveTo(d, 0); ctx.lineTo(d+8, h/2);
+    ctx.lineTo(d, h); ctx.lineTo(d-8, h/2);
+    ctx.fill();
+  } else if (t < 50) {
+    // Plasma
+    for (let x = 0; x < w; x += 3) {
+      for (let y = 0; y < h; y += 3) {
+        const v = Math.sin(x*0.3+previewTick*0.1)+Math.sin(y*0.4+previewTick*0.08);
+        ctx.fillStyle = `hsl(${hue+v*30},80%,55%)`;
+        ctx.fillRect(x, y, 3, 3);
+      }
+    }
+  } else {
+    // Fire
+    ctx.fillStyle = `hsl(${hue},90%,60%)`;
+    for (let i = 0; i < 12; i++) {
+      const x = i * 4;
+      const fh = 4 + Math.sin(previewTick*0.2+i)*6 + Math.random()*4;
+      ctx.fillRect(x, h-fh, 3, fh);
+    }
+  }
 }
 
 function drawPreviewText(ctx, w, h) {
