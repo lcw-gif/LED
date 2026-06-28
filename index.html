@@ -124,8 +124,8 @@
   <div class="tab-panel active" id="tab0">
     <!-- Connection -->
     <div class="card">
-      <button class="btn btn-green" id="btnConn" onclick="toggleBLE()">⚡ 連接 LED Mask</button>
-      <div class="status" id="status">未連接</div>
+      <button class="btn btn-green" id="btnConn" onclick="toggleBLE()">⚡ 連接 LED Mask 😊</button>
+      <div class="status" id="status">未連接 😊</div>
       <div id="debugInfo" style="display:none;font-size:10px;color:var(--red);margin-top:6px;word-break:break-all;"></div>
       <div style="font-size:11px;color:var(--dim);margin-top:8px;text-align:center;">
         📱 Chrome / Edge / Safari 17.4+ 均可使用<br>
@@ -138,6 +138,15 @@
       <h2>🎵 Pattern Library</h2>
       <div class="pat-grid" id="patGrid"></div>
     </div>
+    <!-- Text Input for Text Scroll -->
+    <div class="card">
+      <h2>📝 Text Input</h2>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="textInput" placeholder="輸入文字..." maxlength="20" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:#0d1117;color:#fff;font-size:14px;">
+        <button class="btn btn-purple" onclick="sendText()" style="width:auto;padding:10px 16px;">📝 Send</button>
+      </div>
+    </div>
+
 
     <!-- Playlist Builder -->
     <div class="card">
@@ -631,7 +640,7 @@ async function toggleBLE() {
     st.className = 'status ok';
 
     bleDevice.addEventListener('gattserverdisconnected', () => {
-      btn.textContent = '⚡ 連接 LED Mask';
+      btn.textContent = '⚡ 連接 LED Mask 😊';
       btn.className = 'btn btn-green';
       st.textContent = '已斷開';
       st.className = 'status';
@@ -652,7 +661,7 @@ async function toggleBLE() {
 }
 
 async function send(cmd) {
-  if (!bleChar) { alert('請先連接 LED Mask'); return; }
+  if (!bleChar) { alert('請先連接 LED Mask 😊'); return; }
   try {
     await bleChar.writeValue(new TextEncoder().encode(cmd));
     console.log('TX:', cmd);
@@ -677,7 +686,7 @@ function updateStatusFromDevice(val) {
 
 // ==================== Send Playlist ====================
 async function sendAndStart() {
-  if (!bleChar) { alert('請先連接 LED Mask'); return; }
+  if (!bleChar) { alert('請先連接 LED Mask 😊'); return; }
   if (playlist.length === 0) { alert('Playlist 係空㗎！'); return; }
 
   // Clear existing playlist on device
@@ -717,6 +726,15 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 function switchTab(idx) {
   document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
   document.querySelectorAll('.tab-panel').forEach((p, i) => p.classList.toggle('active', i === idx));
+}
+
+// ==================== Text Input ====================
+function sendText() {
+  const text = document.getElementById('textInput').value.trim();
+  if (text) {
+    send('TEXT:' + text);
+    document.getElementById('status').textContent = '📝 Sent: ' + text;
+  }
 }
 </script>
 </body>
