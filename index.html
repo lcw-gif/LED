@@ -299,6 +299,8 @@ function selectPattern(id) {
 }
 
 function quickMode(id) {
+  // Stop playlist first
+  send('PL_STOP');
   send('MODE:' + id);
   selPat = id;
   document.querySelectorAll('.pat-card').forEach((el, i) => {
