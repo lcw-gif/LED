@@ -111,8 +111,9 @@
     <div class="status" id="status">未連接</div>
     <div id="debugInfo" style="display:none;font-size:10px;color:var(--red);margin-top:6px;word-break:break-all;"></div>
     <div style="font-size:11px;color:var(--dim);margin-top:8px;text-align:center;">
-      ⚠️ 需要 Chrome/Edge + HTTPS 或 localhost<br>
-      本地測試：終端機執行 <code style="background:#21262d;padding:2px 6px;border-radius:4px;">python -m http.server 8000</code> 然後開 <code style="background:#21262d;padding:2px 6px;border-radius:4px;">localhost:8000</code>
+      📱 Chrome / Edge / Safari 17.4+ 均可使用<br>
+      需要 HTTPS（GitHub Pages 已自動提供）<br>
+      請確認已更新至最新系統版本
     </div>
   </div>
 
@@ -496,7 +497,15 @@ async function toggleBLE() {
 
   // Check Web Bluetooth support
   if (!navigator.bluetooth) {
-    st.textContent = '❌ 呢個瀏覽器唔支援 Web Bluetooth。請用 Chrome/Edge，同埋用 HTTPS 或 localhost 開啟。';
+    // Safari 需要 iOS 17.4+ / macOS Sonoma 14.4+
+    const ua = navigator.userAgent;
+    const isIOS = /iPad|iPhone|iPod/.test(ua);
+    const isMac = /Macintosh/.test(ua);
+    let msg = '❌ 呢個瀏覽器唔支援 Web Bluetooth。';
+    if (isIOS) msg += ' 請更新到 iOS 17.4+ 並用 Safari 開啟。';
+    else if (isMac) msg += ' 請更新到 macOS Sonoma 14.4+ 並用 Safari 開啟。';
+    else msg += ' 請用 Chrome/Edge (桌面版) 或 Safari 17.4+。';
+    st.textContent = msg;
     st.className = 'status';
     return;
   }
