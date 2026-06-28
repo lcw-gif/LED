@@ -512,11 +512,32 @@ async function toggleBLE() {
 
   try {
     st.textContent = '正在連接...';
-    // Safari/Chrome 兼容：用 service UUID 搜尋
-    bleDevice = await navigator.bluetooth.requestDevice({
-      filters: [{ services: [SVC] }],
-      optionalServices: [SVC]
-    });
+    // 偵測 Safari / Chrome
+    const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+    console.log('Browser:', isSafari ? 'Safari' : 'Chrome', navigator.userAgent);
+
+    if (isSafari) {
+      // Safari: 用 name filter（Safari 對 service UUID filter 支持較差）
+      try {
+        bleDevice = await navigator.bluetooth.requestDevice({
+          filters: [{ name: 'LED Mask' }],
+          optionalServices: [SVC]
+        });
+      } catch (e1) {
+        console.log('Safari name filter failed:', e1.message);
+        // Safari fallback: 用 acceptAllDevices
+        bleDevice = await navigator.bluetooth.requestDevice({
+          acceptAllDevices: true,
+          optionalServices: [SVC]
+        });
+      }
+    } else {
+      // Chrome: 用 service UUID filter
+      bleDevice = await navigator.bluetooth.requestDevice({
+        filters: [{ services: [SVC] }],
+        optionalServices: [SVC]
+      });
+    }
     const server = await bleDevice.gatt.connect();
     const svc = await server.getPrimaryService(SVC);
     bleChar = await svc.getCharacteristic(RX_C);
