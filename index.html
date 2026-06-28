@@ -93,6 +93,15 @@
   .playing { animation: pulse 1s infinite; }
   @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
 
+  /* Tabs */
+  .tabs { display:flex; gap:0; margin-bottom:12px; }
+  .tab-btn { flex:1; padding:10px; border:none; background:var(--card); color:var(--dim);
+    font-size:14px; font-weight:600; cursor:pointer; border-bottom:2px solid var(--border);
+    transition:all .2s; }
+  .tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); background:#161b22; }
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
+
   /* Quick Mode Grid */
   .mode-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .mode-grid .btn { font-size: 12px; padding: 10px 8px; }
@@ -106,76 +115,82 @@
   <h1>🎭 LED 口罩 <span>v2</span></h1>
 
   <!-- Connection -->
-  <div class="card">
-    <button class="btn btn-green" id="btnConn" onclick="toggleBLE()">⚡ 連接 LED Mask</button>
-    <div class="status" id="status">未連接</div>
-    <div id="debugInfo" style="display:none;font-size:10px;color:var(--red);margin-top:6px;word-break:break-all;"></div>
-    <div style="font-size:11px;color:var(--dim);margin-top:8px;text-align:center;">
-      📱 Chrome / Edge / Safari 17.4+ 均可使用<br>
-      需要 HTTPS（GitHub Pages 已自動提供）<br>
-      請確認已更新至最新系統版本
-    </div>
+  <h1>🎭 LED 口罩 <span>v2</span></h1>
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab(0)">🎶 Playlist</button>
+    <button class="tab-btn" onclick="switchTab(1)">⚡ Manual</button>
   </div>
 
-  <!-- Quick Mode -->
-  <div class="card">
-    <h2>⚡ Quick Mode</h2>
-    <div class="mode-grid">
-      <button class="btn btn-mode" onclick="quickMode(0)">📊 Spectrum EQ</button>
-      <button class="btn btn-mode" onclick="quickMode(1)">🌊 Sine Wave</button>
-      <button class="btn btn-mode" onclick="quickMode(2)">❤️ Heartbeat</button>
-      <button class="btn btn-mode" onclick="quickMode(3)">⚡ Beat Flash</button>
-      <button class="btn btn-mode" onclick="quickMode(4)">📈 Bounce Peaks</button>
-      <button class="btn btn-mode" onclick="quickMode(5)">🌈 Rainbow Flow</button>
-      <button class="btn btn-mode" onclick="quickMode(6)">🔮 Plasma</button>
-      <button class="btn btn-mode" onclick="quickMode(7)">📝 Text Scroll</button>
-      <button class="btn btn-mode" onclick="quickMode(8)">💚 ECG Monitor</button>
-      <button class="btn btn-mode" onclick="quickMode(9)">🎭 Show Mode</button>
-      <button class="btn btn-mode" onclick="quickMode(10)">🔇 Off</button>
-    </div>
-  </div>
-
-  <!-- Pattern Library -->
-  <div class="card">
-    <h2>🎵 Pattern Library</h2>
-    <div class="pat-grid" id="patGrid"></div>
-  </div>
-
-  <!-- Playlist Builder -->
-  <div class="card">
-    <h2>📋 Playlist Builder</h2>
-
-    <!-- Color picker -->
-    <div class="colors" id="colorPicker"></div>
-
-    <div class="builder">
-      <div class="field" style="flex:2">
-        <label>Duration (sec)</label>
-        <input type="number" id="durInput" value="10" min="1" max="300">
-      </div>
-      <div class="field" style="flex:0 0 auto">
-        <label>&nbsp;</label>
-        <button class="btn btn-purple" onclick="addPlaylistEntry()">+ Add</button>
+  <!-- ===== Tab 0: Playlist ===== -->
+  <div class="tab-panel active" id="tab0">
+    <!-- Connection -->
+    <div class="card">
+      <button class="btn btn-green" id="btnConn" onclick="toggleBLE()">⚡ 連接 LED Mask</button>
+      <div class="status" id="status">未連接</div>
+      <div id="debugInfo" style="display:none;font-size:10px;color:var(--red);margin-top:6px;word-break:break-all;"></div>
+      <div style="font-size:11px;color:var(--dim);margin-top:8px;text-align:center;">
+        📱 Chrome / Edge / Safari 17.4+ 均可使用<br>
+        需要 HTTPS（GitHub Pages 已自動提供）
       </div>
     </div>
   </div>
-
-  <!-- Current Playlist -->
-  <div class="card">
-    <h2>🎶 Playlist <span id="plCount" style="color:var(--dim)">(0)</span></h2>
-    <div class="pl-list" id="plList">
-      <div class="pl-empty">No entries yet — select a pattern above and tap + Add</div>
+    <!-- Pattern Library -->
+    <div class="card">
+      <h2>🎵 Pattern Library</h2>
+      <div class="pat-grid" id="patGrid"></div>
     </div>
   </div>
-
-  <!-- Send & Play -->
-  <div class="card">
-    <div class="ctrl-row">
-      <button class="btn btn-green" onclick="sendAndStart()">▶ Send & Play</button>
-      <button class="btn btn-red" onclick="stopPlaylist()">⏹ Stop</button>
+    <!-- Playlist Builder -->
+    <div class="card">
+      <h2>📋 Playlist Builder</h2>
+      <div class="colors" id="colorPicker"></div>
+      <div class="builder">
+        <div class="field" style="flex:2">
+          <label>Duration (sec)</label>
+          <input type="number" id="durInput" value="10" min="1" max="300">
+        </div>
+        <div class="field" style="flex:0 0 auto">
+          <label>&nbsp;</label>
+          <button class="btn btn-purple" onclick="addPlaylistEntry()">+ Add</button>
+        </div>
+      </div>
     </div>
-    <div style="height:8px"></div>
-    <button class="btn btn-outline" onclick="sendManualMode()">📡 Send Manual Mode</button>
+
+    <!-- Current Playlist -->
+    <div class="card">
+      <h2>🎶 Playlist <span id="plCount" style="color:var(--dim)">(0)</span></h2>
+      <div class="pl-list" id="plList">
+        <div class="pl-empty">No entries yet — select a pattern above and tap + Add</div>
+      </div>
+    </div>
+
+    <!-- Send & Play -->
+    <div class="card">
+      <div class="ctrl-row">
+        <button class="btn btn-green" onclick="sendAndStart()">▶ Send & Play</button>
+        <button class="btn btn-red" onclick="stopPlaylist()">⏹ Stop</button>
+      </div>
+    </div>
+  </div>
+  <!-- ===== Tab 1: Manual Mode ===== -->
+  <div class="tab-panel" id="tab1">
+    <div class="card">
+      <h2>⚡ Quick Mode</h2>
+      <div class="mode-grid">
+        <button class="btn btn-mode" onclick="quickMode(0)">📊 Spectrum EQ</button>
+        <button class="btn btn-mode" onclick="quickMode(1)">🌊 Sine Wave</button>
+        <button class="btn btn-mode" onclick="quickMode(2)">❤️ Heartbeat</button>
+        <button class="btn btn-mode" onclick="quickMode(3)">⚡ Beat Flash</button>
+        <button class="btn btn-mode" onclick="quickMode(4)">📈 Bounce Peaks</button>
+        <button class="btn btn-mode" onclick="quickMode(5)">🌈 Rainbow Flow</button>
+        <button class="btn btn-mode" onclick="quickMode(6)">🔮 Plasma</button>
+        <button class="btn btn-mode" onclick="quickMode(7)">📝 Text Scroll</button>
+        <button class="btn btn-mode" onclick="quickMode(8)">💚 ECG Monitor</button>
+        <button class="btn btn-mode" onclick="quickMode(9)">🎭 Show Mode</button>
+        <button class="btn btn-mode" onclick="quickMode(10)">🔇 Off</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -698,6 +713,15 @@ function sendManualMode() {
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ==================== Tabs ====================
+function switchTab(idx) {
+  document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
+  document.querySelectorAll('.tab-panel').forEach((p, i) => p.classList.toggle('active', i === idx));
+}
 </script>
 </body>
-</html>
+</html>('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
+  document.querySelectorAll('.tab-panel').forEach((p, i) => p.classList.toggle('active', i === idx));
+}
+
