@@ -512,20 +512,11 @@ async function toggleBLE() {
 
   try {
     st.textContent = '正在連接...';
-    // 方法 1: 用 filter 搜尋 "LED Mask"
-    try {
-      bleDevice = await navigator.bluetooth.requestDevice({
-        filters: [{ name: 'LED Mask' }],
-        optionalServices: [SVC]
-      });
-    } catch (e1) {
-      // 方法 2: 如果搵唔到，顯示所有 BLE 設備
-      console.log('Filter failed, trying acceptAllDevices:', e1.message);
-      bleDevice = await navigator.bluetooth.requestDevice({
-        acceptAllDevices: true,
-        optionalServices: [SVC]
-      });
-    }
+    // Safari/Chrome 兼容：用 service UUID 搜尋
+    bleDevice = await navigator.bluetooth.requestDevice({
+      filters: [{ services: [SVC] }],
+      optionalServices: [SVC]
+    });
     const server = await bleDevice.gatt.connect();
     const svc = await server.getPrimaryService(SVC);
     bleChar = await svc.getCharacteristic(RX_C);
