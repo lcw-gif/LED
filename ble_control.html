@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>LED 口罩 v2 — K-Pop Control</title>
+<style>
+  :root {
+    --bg: #0d1117; --card: #161b22; --border: #30363d;
+    --text: #e6edf3; --dim: #8b949e; --accent: #58a6ff;
+    --green: #3fb950; --red: #f85149; --purple: #bc8cff;
+    --pink: #f778ba; --yellow: #d29922;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; padding: 12px; padding-bottom: 80px;
+  }
+  .ctr { max-width: 420px; margin: 0 auto; }
+  h1 { text-align: center; font-size: 20px; margin: 8px 0 16px; }
+  h1 span { color: var(--accent); }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px; margin-bottom: 12px;
+  }
+  .card h2 { font-size: 14px; color: var(--accent); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 10px 16px; border: none; border-radius: 8px;
+    font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s;
+    width: 100%; gap: 6px;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-green { background: var(--green); color: #000; }
+  .btn-red { background: var(--red); color: #fff; }
+  .btn-accent { background: var(--accent); color: #000; }
+  .btn-purple { background: var(--purple); color: #000; }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .status { text-align: center; font-size: 13px; color: var(--dim); padding: 8px 0; }
+  .status.ok { color: var(--green); }
+
+  /* Pattern Library */
+  .pat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .pat-card {
+    background: #0d1117; border: 2px solid var(--border); border-radius: 10px;
+    padding: 8px; cursor: pointer; transition: all .2s; text-align: center;
+  }
+  .pat-card:hover { border-color: var(--accent); }
+  .pat-card.selected { border-color: var(--purple); background: #1a1040; }
+  .pat-card canvas { display: block; width: 100%; border-radius: 4px; margin-bottom: 4px; }
+  .pat-card .name { font-size: 11px; color: var(--dim); }
+
+  /* Playlist Builder */
+  .builder { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; }
+  .builder .field { flex: 1; min-width: 70px; }
+  .builder label { font-size: 11px; color: var(--dim); display: block; margin-bottom: 4px; }
+  .builder input, .builder select {
+    width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px;
+    background: #0d1117; color: var(--text); font-size: 13px;
+  }
+  .builder .btn { width: auto; flex: 1; min-width: 80px; padding: 8px 12px; }
+
+  /* Color Presets */
+  .colors { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .clr-btn {
+    width: 32px; height: 32px; border-radius: 50%; border: 2px solid transparent;
+    cursor: pointer; transition: all .15s;
+  }
+  .clr-btn:hover, .clr-btn.sel { border-color: #fff; transform: scale(1.15); }
+  .rainbow-btn { background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red); }
+
+  /* Playlist Items */
+  .pl-list { max-height: 300px; overflow-y: auto; }
+  .pl-item {
+    display: flex; align-items: center; gap: 8px; padding: 8px;
+    border-bottom: 1px solid var(--border); font-size: 13px;
+  }
+  .pl-item:last-child { border-bottom: none; }
+  .pl-idx { color: var(--dim); font-weight: 700; min-width: 20px; }
+  .pl-swatch { width: 24px; height: 24px; border-radius: 4px; flex-shrink: 0; }
+  .pl-info { flex: 1; }
+  .pl-info .pat { font-weight: 600; }
+  .pl-info .meta { color: var(--dim); font-size: 11px; }
+  .pl-del { background: none; border: none; color: var(--red); cursor: pointer; font-size: 18px; padding: 4px; }
+  .pl-empty { text-align: center; color: var(--dim); padding: 20px; font-size: 13px; }
+
+  /* Controls row */
+  .ctrl-row { display: flex; gap: 8px; }
+  .ctrl-row .btn { flex: 1; }
+
+  /* Playing indicator */
+  .playing { animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+
+  /* Quick Mode Grid */
+  .mode-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .mode-grid .btn { font-size: 12px; padding: 10px 8px; }
+  .btn-mode { background: rgba(255,255,255,0.08); color: var(--text); border: 1px solid var(--border); }
+  .btn-mode:hover { border-color: var(--accent); }
+  .btn-mode.active { background: linear-gradient(135deg, #6c5ce7, #a29bfe); border-color: transparent; color: #fff; }
+</style>
+</head>
+<body>
+<div class="ctr">
+  <h1>🎭 LED 口罩 <span>v2</span></h1>
+
+  <!-- Connection -->
+  <div class="card">
+    <button class="btn btn-green" id="btnConn" onclick="toggleBLE()">⚡ 連接 LED Mask</button>
+    <div class="status" id="status">未連接</div>
+    <div style="font-size:11px;color:var(--dim);margin-top:8px;text-align:center;">
+      ⚠️ 需要 Chrome/Edge + HTTPS 或 localhost<br>
+      本地測試：終端機執行 <code style="background:#21262d;padding:2px 6px;border-radius:4px;">python -m http.server 8000</code> 然後開 <code style="background:#21262d;padding:2px 6px;border-radius:4px;">localhost:8000</code>
+    </div>
+  </div>
+
+  <!-- Quick Mode -->
+  <div class="card">
+    <h2>⚡ Quick Mode</h2>
+    <div class="mode-grid">
+      <button class="btn btn-mode" onclick="quickMode(0)">📊 Spectrum EQ</button>
+      <button class="btn btn-mode" onclick="quickMode(1)">🌊 Sine Wave</button>
+      <button class="btn btn-mode" onclick="quickMode(2)">❤️ Heartbeat</button>
+      <button class="btn btn-mode" onclick="quickMode(3)">⚡ Beat Flash</button>
+      <button class="btn btn-mode" onclick="quickMode(4)">📈 Bounce Peaks</button>
+      <button class="btn btn-mode" onclick="quickMode(5)">🌈 Rainbow Flow</button>
+      <button class="btn btn-mode" onclick="quickMode(6)">🔮 Plasma</button>
+      <button class="btn btn-mode" onclick="quickMode(7)">📝 Text Scroll</button>
+      <button class="btn btn-mode" onclick="quickMode(8)">💚 ECG Monitor</button>
+      <button class="btn btn-mode" onclick="quickMode(9)">🔇 Off</button>
+    </div>
+  </div>
+
+  <!-- Pattern Library -->
+  <div class="card">
+    <h2>🎵 Pattern Library</h2>
+    <div class="pat-grid" id="patGrid"></div>
+  </div>
+
+  <!-- Playlist Builder -->
+  <div class="card">
+    <h2>📋 Playlist Builder</h2>
+
+    <!-- Color picker -->
+    <div class="colors" id="colorPicker"></div>
+
+    <div class="builder">
+      <div class="field" style="flex:2">
+        <label>Duration (sec)</label>
+        <input type="number" id="durInput" value="10" min="1" max="300">
+      </div>
+      <div class="field" style="flex:0 0 auto">
+        <label>&nbsp;</label>
+        <button class="btn btn-purple" onclick="addPlaylistEntry()">+ Add</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Current Playlist -->
+  <div class="card">
+    <h2>🎶 Playlist <span id="plCount" style="color:var(--dim)">(0)</span></h2>
+    <div class="pl-list" id="plList">
+      <div class="pl-empty">No entries yet — select a pattern above and tap + Add</div>
+    </div>
+  </div>
+
+  <!-- Send & Play -->
+  <div class="card">
+    <div class="ctrl-row">
+      <button class="btn btn-green" onclick="sendAndStart()">▶ Send & Play</button>
+      <button class="btn btn-red" onclick="stopPlaylist()">⏹ Stop</button>
+    </div>
+    <div style="height:8px"></div>
+    <button class="btn btn-outline" onclick="sendManualMode()">📡 Send Manual Mode</button>
+  </div>
+</div>
+
+<script>
+// ==================== Config ====================
+const PATTERNS = [
+  { id:0, name:'Spectrum EQ',   color:'#00ff88' },
+  { id:1, name:'Sine Wave',     color:'#58a6ff' },
+  { id:2, name:'Heartbeat Pop', color:'#f85149' },
+  { id:3, name:'Beat Flash',    color:'#f0e68c' },
+  { id:4, name:'Bounce Peaks',  color:'#bc8cff' },
+  { id:5, name:'Rainbow Flow',  color:'#rainbow' },
+  { id:6, name:'Plasma',        color:'#d29922' },
+  { id:7, name:'Text Scroll',   color:'#e6edf3' },
+  { id:8, name:'ECG Monitor',   color:'#3fb950' },
+  { id:9, name:'Off',           color:'#333' },
+];
+const COLORS = [
+  { name:'Red',     r:255,g:0,  b:0   },
+  { name:'Orange',  r:255,g:136,b:0   },
+  { name:'Yellow',  r:255,g:255,b:0   },
+  { name:'Green',   r:0,  g:255,b:0   },
+  { name:'Cyan',    r:0,  g:255,b:255 },
+  { name:'Blue',    r:0,  g:0,  b:255 },
+  { name:'Purple',  r:128,g:0,  b:255 },
+  { name:'Pink',    r:255,g:100,b:180 },
+  { name:'White',   r:255,g:255,b:255 },
+];
+
+// ==================== State ====================
+let bleDevice = null, bleChar = null;
+let selPat = 0, selColor = COLORS[6], selRainbow = false;
+let playlist = []; // [{pid, dur, color:{r,g,b}, rainbow}]
+const SVC  = '19b10000-e8f2-537e-4f6c-d104768a1214';
+const RX_C = '19b10001-e8f2-537e-4f6c-d104768a1214';
+const TX_C = '19b10002-e8f2-537e-4f6c-d104768a1214';
+
+// ==================== Init ====================
+document.addEventListener('DOMContentLoaded', () => {
+  buildPatternGrid();
+  buildColorPicker();
+  loadLocal();
+  // Animate previews
+  setInterval(drawPreviews, 200);
+});
+
+// ==================== LocalStorage ====================
+function saveLocal() {
+  localStorage.setItem('ledmask_playlist', JSON.stringify(playlist));
+}
+function loadLocal() {
+  try {
+    const data = localStorage.getItem('ledmask_playlist');
+    if (data) {
+      playlist = JSON.parse(data);
+      renderPlaylist();
+    }
+  } catch(e) {}
+}
+
+function buildPatternGrid() {
+  const g = document.getElementById('patGrid');
+  g.innerHTML = '';
+  PATTERNS.forEach(p => {
+    const d = document.createElement('div');
+    d.className = 'pat-card' + (p.id === selPat ? ' selected' : '');
+    d.onclick = () => selectPattern(p.id);
+    d.innerHTML = `<canvas width="48" height="24" id="cv${p.id}"></canvas><div class="name">${p.name}</div>`;
+    g.appendChild(d);
+  });
+}
+
+function buildColorPicker() {
+  const c = document.getElementById('colorPicker');
+  c.innerHTML = '';
+  COLORS.forEach((cl, i) => {
+    const b = document.createElement('div');
+    b.className = 'clr-btn' + (!selRainbow && selColor === cl ? ' sel' : '');
+    b.style.background = `rgb(${cl.r},${cl.g},${cl.b})`;
+    b.title = cl.name;
+    b.onclick = () => { selColor = cl; selRainbow = false; buildColorPicker(); };
+    c.appendChild(b);
+  });
+  // Rainbow toggle
+  const rb = document.createElement('div');
+  rb.className = 'clr-btn rainbow-btn' + (selRainbow ? ' sel' : '');
+  rb.title = 'Rainbow';
+  rb.onclick = () => { selRainbow = !selRainbow; buildColorPicker(); };
+  c.appendChild(rb);
+}
+
+function selectPattern(id) {
+  selPat = id;
+  document.querySelectorAll('.pat-card').forEach((el, i) => {
+    el.classList.toggle('selected', i === id);
+  });
+}
+
+function quickMode(id) {
+  send('MODE:' + id);
+  selPat = id;
+  document.querySelectorAll('.pat-card').forEach((el, i) => {
+    el.classList.toggle('selected', i === id);
+  });
+  // highlight quick mode button
+  document.querySelectorAll('.mode-grid .btn').forEach((el, i) => {
+    el.classList.toggle('active', i === id);
+  });
+}
+
+// ==================== Pattern Preview Drawing ====================
+let previewTick = 0;
+function drawPreviews() {
+  previewTick++;
+  PATTERNS.forEach(p => {
+    const cv = document.getElementById('cv' + p.id);
+    if (!cv) return;
+    const ctx = cv.getContext('2d');
+    const w = cv.width, h = cv.height;
+    ctx.fillStyle = '#0d1117';
+    ctx.fillRect(0, 0, w, h);
+
+    switch (p.id) {
+      case 0: drawPreviewEQ(ctx, w, h); break;
+      case 1: drawPreviewWave(ctx, w, h); break;
+      case 2: drawPreviewHeart(ctx, w, h); break;
+      case 3: drawPreviewFlash(ctx, w, h); break;
+      case 4: drawPreviewBounce(ctx, w, h); break;
+      case 5: drawPreviewRainbow(ctx, w, h); break;
+      case 6: drawPreviewPlasma(ctx, w, h); break;
+      case 7: drawPreviewText(ctx, w, h); break;
+      case 8: drawPreviewECG(ctx, w, h); break;
+      case 9: break; // off = black
+    }
+  });
+}
+
+function drawPreviewEQ(ctx, w, h) {
+  for (let i = 0; i < 16; i++) {
+    const bh = 4 + Math.sin(previewTick * 0.15 + i * 0.7) * 8 + Math.random() * 4;
+    const hue = (previewTick * 2 + i * 15) % 360;
+    ctx.fillStyle = `hsl(${hue}, 80%, 60%)`;
+    ctx.fillRect(i * 3, h - bh, 2, bh);
+  }
+}
+
+function drawPreviewWave(ctx, w, h) {
+  ctx.strokeStyle = '#58a6ff';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for (let x = 0; x < w; x++) {
+    const y = h/2 + Math.sin(x * 0.3 + previewTick * 0.1) * 6;
+    x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+}
+
+function drawPreviewHeart(ctx, w, h) {
+  // Animated heart scale
+  const t = previewTick % 24;
+  const scale = t < 6 ? 0.6 + t * 0.08 : (t < 12 ? 1.08 - (t-6)*0.04 : (t < 18 ? 0.84 + (t-12)*0.05 : 1.14 - (t-18)*0.05));
+  ctx.fillStyle = `rgba(248,81,73,0.95)`;
+  for (let px = 0; px < w; px++) {
+    for (let py = 0; py < h; py++) {
+      const nx = (px - w/2) / (w/2 * scale * 0.9);
+      const ny = -(py - h/2) / (h/2 * scale * 0.9);
+      const a = nx*nx + ny*ny - 1;
+      if (a*a*a - nx*nx * ny*ny*ny <= 0) {
+        ctx.fillRect(px, py, 1, 1);
+      }
+    }
+  }
+  // Chevrons
+  const off = ((previewTick * 2) % 20) * 0.8;
+  ctx.strokeStyle = 'rgba(248,81,73,0.6)';
+  ctx.lineWidth = 1.5;
+  // >
+  ctx.beginPath();
+  ctx.moveTo(w/2+off, h*0.35); ctx.lineTo(w/2+off+4, h/2); ctx.lineTo(w/2+off, h*0.65);
+  ctx.stroke();
+  // <
+  ctx.beginPath();
+  ctx.moveTo(w/2-off, h*0.35); ctx.lineTo(w/2-off-4, h/2); ctx.lineTo(w/2-off, h*0.65);
+  ctx.stroke();
+}
+
+function drawPreviewFlash(ctx, w, h) {
+  const bright = (previewTick % 10 < 2) ? 1.0 : 0.1;
+  ctx.fillStyle = `rgba(255,255,200,${bright})`;
+  ctx.fillRect(0, 0, w, h);
+}
+
+function drawPreviewBounce(ctx, w, h) {
+  for (let i = 0; i < 16; i++) {
+    const bh = 3 + Math.abs(Math.sin(previewTick * 0.1 + i * 0.5)) * 14;
+    const hue = (previewTick * 3 + i * 20) % 360;
+    ctx.fillStyle = `hsl(${hue}, 70%, 55%)`;
+    ctx.fillRect(i*3, h - bh, 2, bh);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(i*3, h - bh - 2, 2, 1.5);
+  }
+}
+
+function drawPreviewRainbow(ctx, w, h) {
+  for (let x = 0; x < w; x++) {
+    const hue = (previewTick * 3 + x * 15) % 360;
+    ctx.fillStyle = `hsl(${hue}, 90%, 60%)`;
+    ctx.fillRect(x, 0, 1, h);
+  }
+}
+
+function drawPreviewPlasma(ctx, w, h) {
+  for (let x = 0; x < w; x++) {
+    for (let y = 0; y < h; y += 2) {
+      const v = Math.sin(x*0.4 + previewTick*0.05) + Math.sin(y*0.6 + previewTick*0.03);
+      const hue = ((v + 2) / 4 * 360 + previewTick * 2) % 360;
+      ctx.fillStyle = `hsl(${hue}, 80%, 55%)`;
+      ctx.fillRect(x, y, 1, 2);
+    }
+  }
+}
+
+function drawPreviewECG(ctx, w, h) {
+  // Mini ECG trace
+  const base = h * 0.6;
+  ctx.strokeStyle = '#3fb950';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for (let x = 0; x < w; x++) {
+    const t = ((x / w) + previewTick * 0.04) % 1.0;
+    let v = 0;
+    v += 0.15 * Math.exp(-(t-0.2)*(t-0.2)/0.003);
+    v += -0.25* Math.exp(-(t-0.38)*(t-0.38)/0.0008);
+    v +=  1.0 * Math.exp(-(t-0.45)*(t-0.45)/0.0003);
+    v += -0.20* Math.exp(-(t-0.52)*(t-0.52)/0.0008);
+    v +=  0.28* Math.exp(-(t-0.72)*(t-0.72)/0.004);
+    const y = base - v * 14;
+    x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  // Leading dot
+  const lt = ((w-1)/w + previewTick * 0.04) % 1.0;
+  let lv = 0.15*Math.exp(-(lt-0.2)**2/0.003) - 0.25*Math.exp(-(lt-0.38)**2/0.0008)
+         + Math.exp(-(lt-0.45)**2/0.0003) - 0.2*Math.exp(-(lt-0.52)**2/0.0008)
+         + 0.28*Math.exp(-(lt-0.72)**2/0.004);
+  ctx.fillStyle = '#5fef70';
+  ctx.beginPath();
+  ctx.arc(w-1, base - lv*14, 2, 0, Math.PI*2);
+  ctx.fill();
+}
+
+function drawPreviewText(ctx, w, h) {
+  ctx.fillStyle = '#e6edf3';
+  ctx.font = 'bold 12px monospace';
+  const offset = (previewTick * 2) % (w + 30) - 15;
+  ctx.fillText('HI', w/2 - 8 + Math.sin(previewTick*0.1)*4, h/2 + 4);
+}
+
+// ==================== Playlist Management ====================
+function addPlaylistEntry() {
+  const dur = parseInt(document.getElementById('durInput').value) || 10;
+  const name = PATTERNS[selPat].name;
+  const c = selRainbow ? null : { ...selColor };
+  playlist.push({ pid: selPat, dur, color: c, rainbow: selRainbow });
+  renderPlaylist();
+  saveLocal();
+}
+
+function removeEntry(idx) {
+  playlist.splice(idx, 1);
+  renderPlaylist();
+  saveLocal();
+}
+
+function moveEntry(idx, dir) {
+  const ni = idx + dir;
+  if (ni < 0 || ni >= playlist.length) return;
+  [playlist[idx], playlist[ni]] = [playlist[ni], playlist[idx]];
+  renderPlaylist();
+  saveLocal();
+}
+
+function renderPlaylist() {
+  const el = document.getElementById('plList');
+  document.getElementById('plCount').textContent = `(${playlist.length})`;
+
+  if (playlist.length === 0) {
+    el.innerHTML = '<div class="pl-empty">No entries yet — select a pattern and tap + Add</div>';
+    return;
+  }
+
+  el.innerHTML = playlist.map((e, i) => {
+    const name = PATTERNS[e.pid].name;
+    const col = e.rainbow
+      ? 'conic-gradient(red,yellow,lime,aqua,blue,magenta,red)'
+      : `rgb(${e.color.r},${e.color.g},${e.color.b})`;
+    return `
+      <div class="pl-item">
+        <span class="pl-idx">${i+1}</span>
+        <div class="pl-swatch" style="background:${col}"></div>
+        <div class="pl-info">
+          <div class="pat">${name}</div>
+          <div class="meta">${e.dur}s${e.rainbow ? ' · Rainbow' : ''}</div>
+        </div>
+        <button class="pl-del" onclick="moveEntry(${i},-1)" title="Up">▲</button>
+        <button class="pl-del" onclick="moveEntry(${i},1)" title="Down">▼</button>
+        <button class="pl-del" onclick="removeEntry(${i})" title="Delete">✕</button>
+      </div>`;
+  }).join('');
+}
+
+// ==================== BLE ====================
+async function toggleBLE() {
+  if (bleDevice && bleDevice.gatt.connected) {
+    bleDevice.gatt.disconnect();
+    return;
+  }
+  const btn = document.getElementById('btnConn');
+  const st = document.getElementById('status');
+
+  // Check Web Bluetooth support
+  if (!navigator.bluetooth) {
+    st.textContent = '❌ 呢個瀏覽器唔支援 Web Bluetooth。請用 Chrome/Edge，同埋用 HTTPS 或 localhost 開啟。';
+    st.className = 'status';
+    return;
+  }
+
+  try {
+    st.textContent = '正在連接...';
+    // Show all BLE devices so user can pick
+    bleDevice = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: [SVC]
+    });
+    const server = await bleDevice.gatt.connect();
+    const svc = await server.getPrimaryService(SVC);
+    bleChar = await svc.getCharacteristic(RX_C);
+
+    const txChar = await svc.getCharacteristic(TX_C);
+    await txChar.startNotifications();
+    txChar.addEventListener('characteristicvaluechanged', e => {
+      const val = new TextDecoder().decode(e.target.value);
+      console.log('RX:', val);
+      if (val.startsWith('PL:')) updateStatusFromDevice(val);
+    });
+
+    btn.textContent = '⚡ Disconnect';
+    btn.className = 'btn btn-red';
+    st.textContent = '✅ 已連接';
+    st.className = 'status ok';
+
+    bleDevice.addEventListener('gattserverdisconnected', () => {
+      btn.textContent = '⚡ 連接 LED Mask';
+      btn.className = 'btn btn-green';
+      st.textContent = '已斷開';
+      st.className = 'status';
+    });
+  } catch (err) {
+    st.textContent = '❌ ' + err.message;
+    st.className = 'status';
+  }
+}
+
+async function send(cmd) {
+  if (!bleChar) { alert('請先連接 LED Mask'); return; }
+  try {
+    await bleChar.writeValue(new TextEncoder().encode(cmd));
+    console.log('TX:', cmd);
+  } catch (e) {
+    alert('發送失敗: ' + e.message);
+  }
+}
+
+function updateStatusFromDevice(val) {
+  // PL:N=3,A=1,I=1,R=8,P=2
+  const st = document.getElementById('status');
+  const parts = {};
+  val.split(',').forEach(p => { const [k,v] = p.split('='); parts[k] = v; });
+  if (parts.A === '1') {
+    st.textContent = `▶ Playing ${parts.P !== undefined ? PATTERNS[parseInt(parts.P)].name : ''} (${parts.R}s left)`;
+    st.className = 'status ok playing';
+  } else {
+    st.textContent = '✅ 已連接';
+    st.className = 'status ok';
+  }
+}
+
+// ==================== Send Playlist ====================
+async function sendAndStart() {
+  if (!bleChar) { alert('請先連接 LED Mask'); return; }
+  if (playlist.length === 0) { alert('Playlist 係空㗎！'); return; }
+
+  // Clear existing playlist on device
+  await send('PL_CLR');
+
+  // Send each entry (small delay between)
+  for (let i = 0; i < playlist.length; i++) {
+    const e = playlist[i];
+    const r = e.rainbow ? 0 : e.color.r;
+    const g = e.rainbow ? 0 : e.color.g;
+    const b = e.rainbow ? 0 : e.color.b;
+    const cmd = `PL_ADD:${e.pid},${e.dur},${r},${g},${b},${e.rainbow?1:0}`;
+    await send(cmd);
+    await sleep(50);
+  }
+
+  // Start playing
+  await send('PL_START');
+  document.getElementById('status').textContent = '▶ Playing!';
+  document.getElementById('status').className = 'status ok playing';
+}
+
+function stopPlaylist() {
+  send('PL_STOP');
+  document.getElementById('status').textContent = '⏹ Stopped';
+  document.getElementById('status').className = 'status';
+}
+
+function sendManualMode() {
+  send('MODE:' + selPat);
+  if (!selRainbow) send(`COLOR:${selColor.r},${selColor.g},${selColor.b}`);
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>
